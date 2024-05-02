@@ -1,5 +1,10 @@
 #include "systemcalls.h"
 
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/wait.h> 
+
 /**
  * @param cmd the command to execute with system()
  * @return true if the command in @param cmd was executed
@@ -11,12 +16,17 @@ bool do_system(const char *cmd)
 {
 
 /*
- * TODO  add your code here
+ * 
+ * DONE > TODO  add your code here
  *  Call the system() function with the command set in the cmd
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
 
+    int status = system(cmd);  
+    if (status == -1) {
+        return false;  
+    }
     return true;
 }
 
@@ -50,7 +60,7 @@ bool do_exec(int count, ...)
     command[count] = command[count];
 
 /*
- * TODO:
+ * DONE > TODO:
  *   Execute a system command by calling fork, execv(),
  *   and wait instead of system (see LSP page 161).
  *   Use the command[0] as the full path to the command to execute
@@ -58,6 +68,25 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+
+    pid_t pid = fork();
+    if (pid == -1)
+	return false;
+    else if (pid == 0) {
+	execv(command[0], &command[1]);
+	// printf("\nError: return from execv()\n");
+	return false; // return is not expexted
+    }
+
+    int status;
+    if (waitpid(pid, &status, 0) == -1) {
+	// printf("\nError: waitpid() failed\n");
+	return false;
+    }
+    else if (status != 0) {
+	// printf("\nError: status = %d\n", status);
+	return false;
+    }
 
     va_end(args);
 
@@ -86,14 +115,48 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 
 
 /*
- * TODO
+ * DONE > TODO
  *   Call execv, but first using https://stackoverflow.com/a/13784315/1446624 as a refernce,
  *   redirect standard out to a file specified by outputfile.
  *   The rest of the behaviour is same as do_exec()
  *
 */
+    pid_t pid;
+    
+    int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    if (fd < 0) { 
+	//printf("\nError: failed to open redirect file"); 
+	return false;
+    }
+
+    switch (pid = fork()) {
+	case -1: 
+	    //printf("\nError: failed to fork process"); 
+	    return false;
+	case 0:
+	    if (dup2(fd, 1) < 0) { 
+		//printf("\nError: failed to redirect output"); 
+		return false;
+	    }
+	    close(fd);
+	    execvp(command[0], &command[1]);
+	    //printf("\nError: return from execv()\n");
+	    return false; // return is not expexted
+	default:
+	    close(fd);
+    }
 
     va_end(args);
 
     return true;
+}
+
+
+int main(void) {
+    printf("\nsystemcals.c ->\n");
+    // bool result = do_system("ls -l");
+    // bool result = do_exec(4, "/bin/ls", "ls", "-l", "-a");
+    bool result = do_exec_redirect("/tmp/redirect_out.txt", 4, "/bin/ls", "ls", "-l", "-a");
+    printf("\nResult: %s\n", result ? "True" : "False");
+    return 0;
 }

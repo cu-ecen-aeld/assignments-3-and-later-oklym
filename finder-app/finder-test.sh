@@ -54,7 +54,7 @@ if [ $assignment != 'assignment1' ]
 then
         echo "Removing the old writer utility and compiling as a native application"
         make clean
-        make
+        #make
 fi
 
 
