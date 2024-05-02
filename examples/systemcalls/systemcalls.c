@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/wait.h> 
 
+
 /**
  * @param cmd the command to execute with system()
  * @return true if the command in @param cmd was executed
@@ -70,26 +71,27 @@ bool do_exec(int count, ...)
 */
 
     pid_t pid = fork();
-    if (pid == -1)
+    if (pid == -1) {
 	return false;
+    }
     else if (pid == 0) {
-	execv(command[0], &command[1]);
-	// printf("\nError: return from execv()\n");
-	return false; // return is not expexted
+	execv(command[0], command);
+	//printf("\nError: return from execv()\n");
+	exit(-1);
     }
-
-    int status;
-    if (waitpid(pid, &status, 0) == -1) {
-	// printf("\nError: waitpid() failed\n");
-	return false;
-    }
-    else if (status != 0) {
-	// printf("\nError: status = %d\n", status);
-	return false;
+    else {
+	int status;
+	if (waitpid(pid, &status, 0) == -1) {
+	    //printf("\nError: waitpid() failed\n");
+	    return false;
+	}
+	else if (status != 0) {
+	    //printf("\nError: status = %d\n", status);
+	    return false;
+	}
     }
 
     va_end(args);
-
     return true;
 }
 
@@ -139,7 +141,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 		return false;
 	    }
 	    close(fd);
-	    execvp(command[0], &command[1]);
+	    execvp(command[0], command);
 	    //printf("\nError: return from execv()\n");
 	    return false; // return is not expexted
 	default:
@@ -151,14 +153,3 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     return true;
 }
 
-
-/*
-int main(void) {
-    printf("\nsystemcals.c ->\n");
-    // bool result = do_system("ls -l");
-    // bool result = do_exec(4, "/bin/ls", "ls", "-l", "-a");
-    bool result = do_exec_redirect("/tmp/redirect_out.txt", 4, "/bin/ls", "ls", "-l", "-a");
-    printf("\nResult: %s\n", result ? "True" : "False");
-    return 0;
-}
-*/
