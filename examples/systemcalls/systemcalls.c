@@ -152,6 +152,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 }
 
 
+/*
 int main(void) {
     printf("\nsystemcals.c ->\n");
     // bool result = do_system("ls -l");
@@ -160,3 +161,4 @@ int main(void) {
     printf("\nResult: %s\n", result ? "True" : "False");
     return 0;
 }
+*/
