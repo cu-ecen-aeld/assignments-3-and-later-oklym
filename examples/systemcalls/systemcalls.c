@@ -148,6 +148,16 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 	    close(fd);
     }
 
+    int status;
+    if (waitpid(pid, &status, 0) == -1) {
+	//printf("\nError: waitpid() failed\n");
+	return false;
+    }
+    else if (status != 0) {
+	//printf("\nError: status = %d\n", status);
+	return false;
+    }
+    
     va_end(args);
 
     return true;
