@@ -48,7 +48,7 @@ void go_exit(int exit_code) {
 
     if (remove(FILE_NAME) == ERR_RESULT) {
 	printSysLog(LOG_DEBUG, "Failed to remove data file");
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
     }
 
     //printf("\n\n>>>>> exit: %d\n\n", exit_code);
@@ -332,15 +332,53 @@ static int listen_loop(int serv_fd) {
 }
 
 
+static int setup_demon(void) {
+    
+    pid_t daemon_pid;
+
+    daemon_pid = fork();
+    if (daemon_pid == ERR_RESULT) {
+        printSysLog(LOG_ERR, "fork() fails.");
+        return ERR_RESULT;
+    }
+    else if (daemon_pid != 0) {
+        go_exit(EXIT_SUCCESS);
+    }
+
+    // we are here if we are child - setup daemon
+    if (setsid() == ERR_RESULT) {
+        printSysLog(LOG_ERR, "failed to setup SID.");
+        return ERR_RESULT;
+    }
+
+    if (chdir("/") == ERR_RESULT) {
+        printSysLog(LOG_ERR, "failed to change work directory to '/'");
+    }
+
+    dup2(open("/dev/null", O_RDWR), STDIN_FILENO);
+    dup2(STDIN_FILENO, STDOUT_FILENO);
+    dup2(STDOUT_FILENO, STDERR_FILENO);
+
+    return OK_RESULT;
+}
+
+
 int main (int argc, char* argv[]) {
 
-    if(setup_signals() == ERR_RESULT) {
+    if (setup_signals() == ERR_RESULT) {
 	go_exit(EXIT_FAILURE);
     }
 
     sock_fd = open_socket();
-    if(sock_fd == ERR_RESULT) {
+    if (sock_fd == ERR_RESULT) {
 	go_exit(EXIT_FAILURE);
+    }
+
+
+    if (argc >= 2 && (strcmp(argv[1], "-d") == 0)) {
+	if (setup_demon() == ERR_RESULT) {
+	    go_exit(EXIT_FAILURE);
+	}
     }
 
     listen_loop(sock_fd);
